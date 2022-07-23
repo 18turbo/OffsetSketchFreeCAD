@@ -1,0 +1,176 @@
+import FreeCAD
+from PySide import QtCore, QtGui
+from FreeCAD import Base
+import Sketcher
+import Draft
+import Part
+
+# Autor:			18Turbo
+# Fecha:		19-07-2022
+# Versión:		0.0.12 BETA
+#	
+# Funcionalidad:	Crea un OFFSET de un sketch completo. No tiene porqué ser cerrado, pero su comportamiento cuando es abierto es
+#				peculiar.
+#
+# Descripción:	
+#
+#
+# Notas de versiones:
+# v.0.0.12:		Añadido Uniones con Arco
+# v.0.0.11:		Borra correctamente pasos intermedios
+# v.0.0.10:		Posibilidad de decimales
+#				Se corrige el offset cuando el nombre del boceto es distinto de 'Sketch'
+#				Posibilidad de Conservar el original o eliminarlo al hacer la operación de offset
+# v.0.0.9:		Versión Beta. Se eliminan objetos intermedios en la creación del offset.
+#				Arreglo de fallos importantes
+# v.0.0.8:		Versión Alfa.
+#
+#
+#
+#
+#
+#
+#
+
+try:
+    _fromUtf8 = QtCore.QString.fromUtf8
+except AttributeError:
+    def _fromUtf8(s):
+        return s
+
+try:
+    _encoding = QtGui.QApplication.UnicodeUTF8
+    def _translate(context, text, disambig):
+        return QtGui.QApplication.translate(context, text, disambig, _encoding)
+except AttributeError:
+    def _translate(context, text, disambig):
+        return QtGui.QApplication.translate(context, text, disambig)
+
+
+class Ui_MainWindow(object):
+
+     def __init__(self, MainWindow):
+        self.window = MainWindow
+
+        MainWindow.setObjectName(_fromUtf8("MainWindow"))
+        MainWindow.resize(501, 121)
+        self.centralWidget = QtGui.QWidget(MainWindow)
+        self.centralWidget.setGeometry(QtCore.QRect(10, 10, 491, 111))
+        self.centralWidget.setObjectName(_fromUtf8("centralWidget"))
+
+        self.etiquetaOffset = QtGui.QLabel(self.centralWidget)
+        self.etiquetaOffset.setGeometry(QtCore.QRect(193, 13, 201, 20))
+        self.etiquetaOffset.setObjectName(_fromUtf8("label"))
+
+        self.cantidadOffset = QtGui.QDoubleSpinBox(self.centralWidget)
+        self.cantidadOffset.setGeometry(QtCore.QRect(390, 10, 67, 26))
+        self.cantidadOffset.setMinimum(-1000.0)
+        self.cantidadOffset.setMaximum(1000.0)
+        self.cantidadOffset.setSingleStep(1)
+        self.cantidadOffset.setValue(1)
+        self.cantidadOffset.setObjectName(_fromUtf8("doubleSpinBox"))
+
+        self.etiquetaInfo = QtGui.QLabel(self.centralWidget)
+        self.etiquetaInfo.setGeometry(QtCore.QRect(15, 70, 131, 17))
+        self.etiquetaInfo.setObjectName(_fromUtf8("label"))
+
+        self.conservarOriginal = QtGui.QCheckBox(self.centralWidget)
+        self.conservarOriginal.setGeometry(QtCore.QRect(160, 50, 171, 23))
+        self.conservarOriginal.setCheckable(True)
+        self.conservarOriginal.setChecked(True)
+        self.conservarOriginal.setObjectName(_fromUtf8("checkBox"))
+
+        self.arco = QtGui.QCheckBox(self.centralWidget)
+        self.arco.setGeometry(QtCore.QRect(160, 70, 171, 23))
+        self.arco.setCheckable(True)
+        self.arco.setChecked(False)
+        self.arco.setObjectName(_fromUtf8("checkBox"))
+
+        self.botonCrear = QtGui.QPushButton(self.centralWidget)
+        self.botonCrear.setGeometry(QtCore.QRect(350, 50, 111, 25))
+        self.botonCrear.setObjectName(_fromUtf8("pushButton"))
+        self.botonCrear.clicked.connect(self.on_botonCrear_clicked)
+
+        MainWindow.setCentralWidget(self.centralWidget)
+
+        self.retranslateUi(MainWindow)
+
+
+     def retranslateUi(self, MainWindow):
+        MainWindow.setWindowTitle(_translate("MainWindow", "Hacer Offset de un sketch (boceto)", None))
+        self.etiquetaOffset.setText(_translate("MainWindow", "Offset del sketch (boceto):", None))
+        self.etiquetaInfo.setText(_translate("MainWindow", "v.0.0.12 BETA", None))
+        self.conservarOriginal.setText(_translate("MainWindow", "Conservar Original", None))
+        self.arco.setText(_translate("MainWindow", "Uniones con Arco", None))
+        self.botonCrear.setText(_translate("MainWindow", "Hacer Offset", None))
+
+
+     def on_botonCrear_clicked(self):
+        
+        # Busco el último ID creado en el documento
+        ultimoID = Gui.ActiveDocument.getObject(FreeCAD.ActiveDocument.Objects.pop().Name).Object.ID
+
+        # Creo un borrador de Draft generando un bloque (Block)
+        borrador = Draft.draftify(FreeCAD.ActiveDocument.getObject(objeto.Name), True, False)
+        App.ActiveDocument.recompute()
+        
+        # Genero un offset a partir del bloque
+        App.ActiveDocument.addObject("Part::Offset2D","Offset2DAuxiliar")
+        App.ActiveDocument.getObject('Offset2DAuxiliar').Source = App.ActiveDocument.getObject(borrador.Name)
+        App.ActiveDocument.recompute()
+
+        from FreeCAD import Base
+
+        App.Console.PrintMessage(self.cantidadOffset.value())
+
+        App.ActiveDocument.getObject('Offset2DAuxiliar').Value = self.cantidadOffset.value()
+#        App.ActiveDocument.getObject('Offset2DAuxiliar').Mode = 1
+
+        if self.arco.isChecked() == False:
+             tipoUnion = 2
+        else:
+             tipoUnion = 0
+
+        App.ActiveDocument.getObject('Offset2DAuxiliar').Join = tipoUnion
+#        App.ActiveDocument.getObject('Offset2DAuxiliar').Interesection = False
+#        App.ActiveDocument.getObject('Offset2DAuxiliar').SelfInteresection = False
+#        App.ActiveDocument.getObject('Offset2DAuxiliar').Fill = self.relleno.isChecked()
+        App.ActiveDocument.recompute()
+
+###       Si label = 'SketchOffset' -> renombrar Original
+
+        Gui.Selection.addSelection(App.ActiveDocument.Name,'Offset2DAuxiliar')
+        sketchAuxiliar = Draft.make_sketch(FreeCADGui.Selection.getSelection(), True, None, False, "SketchOffset", -1 ,1e-3)
+        FreeCAD.ActiveDocument.recompute()
+
+        Gui.Selection.clearSelection()
+        Gui.Selection.addSelection(App.activeDocument().Name,objeto.Name)
+        Gui.Selection.addSelection(App.activeDocument().Name,'SketchOffset')
+        App.activeDocument().recompute()
+ 
+        App.activeDocument().ActiveObject.Placement = App.ActiveDocument.getObject(objeto.Name).Placement
+        App.activeDocument().recompute()
+
+        for objetoCreado in FreeCAD.ActiveDocument.Objects:
+            if ((Gui.ActiveDocument.getObject(objetoCreado.Name).Object.ID > ultimoID) and
+                (Gui.ActiveDocument.getObject(objetoCreado.Name).Object.ID < Gui.ActiveDocument.getObject(sketchAuxiliar.Name).Object.ID)):
+                    App.activeDocument().removeObject(objetoCreado.Name)
+        App.activeDocument().recompute() 
+
+        if self.conservarOriginal.isChecked() == False:
+            App.activeDocument().removeObject(objeto.Name)
+            App.activeDocument().recompute()
+
+        self.window.hide()
+
+seleccion = Gui.Selection.getSelection()
+if len(seleccion) == 1:
+    objeto = seleccion[0]
+    if objeto.Name.find('Sketch') > -1:
+        MainWindow = QtGui.QMainWindow()
+        ui = Ui_MainWindow(MainWindow)
+        MainWindow.show()
+    else:
+        App.Console.PrintWarning("Debes seleccionar exactamente un sketch (boceto) \n")
+else:
+    App.Console.PrintWarning("Debes seleccionar exactamente un sketch (boceto) \n")
