@@ -9,7 +9,7 @@ Realiza un offset 2D de un sketch (boceto) en FreeCAD
 3. En la ventana que aparece, pincha en el botón de la derecha "Crear"
 4. Pon un nombre para la macro, por ejemplo: "Offset 2D", y pincha en Aceptar.
 5. Aparecerá una pestaña de FreeCAD en blanco.
-6. Copia el contenido del fichero **Generador3D_0.0.12BETA.FCMacro** y peǵalo a la ventana en blanco. Para hacerlo, abre el fichero con cualquier editor de texto, selecciona TODO, cópialo con CTRL-C y pégalo en el documento en blanco con CTRL-V
+6. Copia el contenido del fichero **Hacer_OFFSET.FCMacro** y peǵalo a la ventana en blanco. Para hacerlo, abre el fichero con cualquier editor de texto, selecciona TODO, cópialo con CTRL-C y pégalo en el documento en blanco con CTRL-V
 7. Pincha en **Archivo --> Guardar**
 8. Cierra la pestaña.
 9. Vuelve a ir  al menú superior **Macro --> Macros...**
